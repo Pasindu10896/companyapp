@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inspection Section – CPMS</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    input, select, textarea { border: 1px solid #d1d5db; }
+    .file-list { font-size: 0.875rem; color: #374151; }
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+  <!-- Header -->
+  <header class="bg-blue-900 text-white flex justify-between items-center p-4 shadow-md">
+    <h1 class="text-xl font-semibold">Concord Footwear Pvt Ltd – CPMS</h1>
+    <div>User: Quality Officer | Date: <span id="currentDate"></span> | <span class="cursor-pointer underline">Logout</span></div>
+  </header>
+
+  <main class="p-6 space-y-8">
+    <h2 class="text-2xl font-semibold text-blue-800">Inspection Section (Material & Leather Quality Check)</h2>
+
+    <!-- Form -->
+    <form id="inspectionForm" class="bg-white p-6 rounded-lg shadow-md grid grid-cols-1 md:grid-cols-2 gap-4">
+
+      <div>
+        <label class="block font-semibold mb-1">Inspection Method</label>
+        <select id="method" class="w-full p-2 rounded" required>
+          <option value="" disabled selected>Select Method</option>
+          <option value="AQL">AQL</option>
+          <option value="10%">10% Inspection</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="block font-semibold mb-1">Material Type</label>
+        <select id="material" class="w-full p-2 rounded" required>
+          <option value="" disabled selected>Select Material</option>
+          <option>Leather</option>
+          <option>Sole</option>
+          <option>Lining</option>
+          <option>Foam</option>
+          <option>Adhesive</option>
+          <option>Thread</option>
+          <option>Other</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="block font-semibold mb-1">Batch / Lot No.</label>
+        <input id="batch_no" type="text" class="w-full p-2 rounded" placeholder="Enter batch/lot number" required>
+      </div>
+
+      <div>
+        <label class="block font-semibold mb-1">Received Quantity</label>
+        <input id="received_qty" type="number" class="w-full p-2 rounded" placeholder="0" required>
+      </div>
+
+      <!-- AQL Controls -->
+      <div id="aqlControls" class="contents">
+        <div>
+          <label class="block font-semibold mb-1">Inspection Level</label>
+          <select id="inspection_level" class="w-full p-2 rounded">
+            <option>General I</option>
+            <option selected>General II</option>
+            <option>General III</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block font-semibold mb-1">AQL Standard</label>
+          <select id="aql" class="w-full p-2 rounded">
+            <option>0.65</option>
+            <option>1.0</option>
+            <option>1.5</option>
+            <option selected>2.5</option>
+            <option>4.0</option>
+            <option>6.5</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- AQL Display -->
+      <div class="col-span-2 bg-gray-100 p-3 rounded shadow-md hidden" id="aqlDisplay">
+        <p id="displaySample">Sample Size (n): -</p>
+        <p id="displayAc">Acceptance Number (Ac): -</p>
+        <p id="displayRe">Rejection Number (Re): -</p>
+      </div>
+
+      <!-- 10% Inspection Display -->
+      <div class="col-span-2 bg-yellow-100 p-3 rounded shadow-md hidden" id="tenPercentDisplay">
+        <p id="display10Sample">Sample Size (n): -</p>
+        <p id="display10Ac">Acceptance: -</p>
+        <p id="display10Re">Rejection: -</p>
+      </div>
+
+      <div>
+        <label class="block font-semibold mb-1">Defects Found</label>
+        <input id="defects" type="number" class="w-full p-2 rounded" placeholder="0" required>
+      </div>
+
+      <div>
+        <label class="block font-semibold mb-1">Inspector</label>
+        <select id="inspector" class="w-full p-2 rounded" required>
+          <option value="" disabled selected>Select Inspector</option>
+          <option>John Doe</option>
+          <option>Jane Smith</option>
+          <option>Michael Perera</option>
+          <option>Sara Fernando</option>
+        </select>
+      </div>
+
+      <div class="col-span-2">
+        <label class="block font-semibold mb-1">Attachments (Images/PDFs)</label>
+        <input id="attachments" type="file" class="w-full p-2 rounded" multiple accept="image/*,application/pdf">
+        <div id="fileList" class="file-list mt-1"></div>
+      </div>
+
+      <div class="col-span-2 flex items-center space-x-2">
+        <input id="lab_test" type="checkbox" class="w-4 h-4">
+        <label for="lab_test" class="font-semibold">Send Sample to Laboratory</label>
+      </div>
+
+      <div class="col-span-2">
+        <label class="block font-semibold mb-1">Lab Test Type</label>
+        <input id="test_type" type="text" class="w-full p-2 rounded" placeholder="e.g. Tear Strength" disabled>
+      </div>
+
+      <div class="col-span-2">
+        <label class="block font-semibold mb-1">Remarks</label>
+        <textarea id="remarks" rows="3" class="w-full p-2 rounded" placeholder="Add remarks..."></textarea>
+      </div>
+
+      <div class="col-span-2 text-right">
+        <button type="button" id="addRecord" class="bg-blue-600 text-white px-5 py-2 rounded hover:bg-blue-700">Add Record</button>
+      </div>
+    </form>
+
+    <!-- Records Table -->
+    <div class="bg-white p-6 rounded-lg shadow-md overflow-x-auto">
+      <h3 class="text-lg font-semibold mb-3">Inspection Records</h3>
+      <table class="w-full border border-gray-300 text-sm text-center" id="recordTable">
+        <thead class="bg-gray-200">
+          <tr>
+            <th class="border px-2 py-1">Method</th>
+            <th class="border px-2 py-1">Material</th>
+            <th class="border px-2 py-1">Batch No.</th>
+            <th class="border px-2 py-1">Received Qty</th>
+            <th class="border px-2 py-1">Inspection Level</th>
+            <th class="border px-2 py-1">AQL</th>
+            <th class="border px-2 py-1">Sample Size</th>
+            <th class="border px-2 py-1">Ac</th>
+            <th class="border px-2 py-1">Re</th>
+            <th class="border px-2 py-1">Defects</th>
+            <th class="border px-2 py-1">Result</th>
+            <th class="border px-2 py-1">Inspector</th>
+            <th class="border px-2 py-1">Lab Test</th>
+            <th class="border px-2 py-1">Test Type</th>
+            <th class="border px-2 py-1">Attachments</th>
+            <th class="border px-2 py-1">Remarks</th>
+          </tr>
+        </thead>
+        <tbody id="recordBody"></tbody>
+      </table>
+      <div class="text-right mt-4">
+        <button id="saveAll" class="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700">Save All Records</button>
+      </div>
+    </div>
+  </main>
+
+<script>
+const tableBody = document.getElementById('recordBody');
+const labTestCheckbox = document.getElementById('lab_test');
+const testTypeInput = document.getElementById('test_type');
+const receivedQtyInput = document.getElementById('received_qty');
+const inspectionLevelInput = document.getElementById('inspection_level');
+const aqlInput = document.getElementById('aql');
+const attachmentsInput = document.getElementById('attachments');
+const fileListDiv = document.getElementById('fileList');
+const inspectorInput = document.getElementById('inspector');
+const methodInput = document.getElementById('method');
+const displaySample = document.getElementById('displaySample');
+const displayAc = document.getElementById('displayAc');
+const displayRe = document.getElementById('displayRe');
+const aqlDisplayBox = document.getElementById('aqlDisplay');
+const aqlControls = document.getElementById('aqlControls');
+const tenPercentDisplayBox = document.getElementById('tenPercentDisplay');
+const display10Sample = document.getElementById('display10Sample');
+const display10Ac = document.getElementById('display10Ac');
+const display10Re = document.getElementById('display10Re');
+
+// AQL Table
+const AQLTable = [
+  {lotMin: 2, lotMax: 8, level1: 2, level2: 2, level3: 3},
+  {lotMin: 9, lotMax: 15, level1: 2, level2: 3, level3: 5},
+  {lotMin: 16, lotMax: 25, level1: 3, level2: 5, level3: 8},
+  {lotMin: 26, lotMax: 50, level1: 5, level2: 8, level3: 13},
+  {lotMin: 51, lotMax: 90, level1: 5, level2: 13, level3: 20},
+  {lotMin: 91, lotMax: 150, level1: 8, level2: 20, level3: 32},
+  {lotMin: 151, lotMax: 280, level1: 13, level2: 32, level3: 50},
+  {lotMin: 281, lotMax: 500, level1: 20, level2: 50, level3: 80},
+  {lotMin: 501, lotMax: 1200, level1: 32, level2: 80, level3: 125},
+  {lotMin: 1201, lotMax: 3200, level1: 50, level2: 125, level3: 200},
+  {lotMin: 3201, lotMax: 10000, level1: 80, level2: 200, level3: 315},
+  {lotMin: 10001, lotMax: 35000, level1: 125, level2: 315, level3: 500},
+  {lotMin: 35001, lotMax: 150000, level1: 200, level2: 500, level3: 800}
+];
+
+function getLevelKey(levelText) {
+  switch(levelText) {
+    case 'General I': return 'level1';
+    case 'General II': return 'level2';
+    case 'General III': return 'level3';
+    default: return 'level2';
+  }
+}
+
+function getAQLLimits(sampleSize, aqlPercent) {
+  const rawAc = sampleSize * (aqlPercent / 100);
+  const Ac = Math.round(rawAc);
+  const Re = Ac + 1;
+  return { Ac, Re };
+}
+
+function updateSampleSize() {
+  if (methodInput.value !== 'AQL') {
+    aqlDisplayBox.classList.add('hidden');
+    return;
+  }
+  const received = Number(receivedQtyInput.value);
+  const levelKey = getLevelKey(inspectionLevelInput.value);
+  const aql = parseFloat(aqlInput.value);
+  if(!received || !aql) {
+    aqlDisplayBox.classList.add('hidden');
+    return;
+  }
+  const entry = AQLTable.find(e => received >= e.lotMin && received <= e.lotMax);
+  if(!entry) {
+    aqlDisplayBox.classList.add('hidden');
+    return;
+  }
+  const sampleSize = entry[levelKey];
+  const { Ac, Re } = getAQLLimits(sampleSize, aql);
+  displaySample.textContent = `Sample Size (n): ${sampleSize}`;
+  displayAc.textContent = `Acceptance Number (Ac): ${Ac}`;
+  displayRe.textContent = `Rejection Number (Re): ${Re}`;
+  aqlDisplayBox.classList.remove('hidden');
+}
+
+function updateTenPercentSample() {
+  if (methodInput.value !== '10%') {
+    tenPercentDisplayBox.classList.add('hidden');
+    return;
+  }
+  const received = Number(receivedQtyInput.value);
+  if (!received) {
+    tenPercentDisplayBox.classList.add('hidden');
+    return;
+  }
+  const sampleSize = Math.ceil(received * 0.10);
+  const maxDefects = Math.floor(received * 0.03);
+  display10Sample.textContent = `Sample Size (n): ${sampleSize}`;
+  display10Ac.textContent = `Acceptance: ≤ ${maxDefects} defects (3% of received qty)`;
+  display10Re.textContent = `Rejection: > ${maxDefects} defects`;
+  tenPercentDisplayBox.classList.remove('hidden');
+}
+
+labTestCheckbox.addEventListener('change', () => {
+  testTypeInput.disabled = !labTestCheckbox.checked;
+});
+
+attachmentsInput.addEventListener('change', () => {
+  const files = Array.from(attachmentsInput.files).map(f => f.name).join(', ');
+  fileListDiv.textContent = files || '';
+});
+
+receivedQtyInput.addEventListener('input', () => {
+  updateSampleSize();
+  updateTenPercentSample();
+});
+
+inspectionLevelInput.addEventListener('change', updateSampleSize);
+aqlInput.addEventListener('change', updateSampleSize);
+
+methodInput.addEventListener('change', () => {
+  if (methodInput.value === 'AQL') {
+    aqlControls.classList.remove('hidden');
+    tenPercentDisplayBox.classList.add('hidden');
+    updateSampleSize();
+  } else if (methodInput.value === '10%') {
+    aqlControls.classList.add('hidden');
+    aqlDisplayBox.classList.add('hidden');
+    updateTenPercentSample();
+  }
+});
+
+// Add Record
+document.getElementById('addRecord').addEventListener('click', () => {
+  const method = methodInput.value;
+  const material = document.getElementById('material').value;
+  const batch_no = document.getElementById('batch_no').value;
+  const received_qty = Number(receivedQtyInput.value);
+  const inspection_level = inspectionLevelInput.value;
+  const aql = parseFloat(aqlInput.value);
+  const defects = Number(document.getElementById('defects').value || 0);
+  const lab_test = labTestCheckbox.checked ? 'Yes' : 'No';
+  const test_type = testTypeInput.value;
+  const remarks = document.getElementById('remarks').value;
+  const inspector = inspectorInput.value;
+  const attachments = Array.from(attachmentsInput.files).map(f => f.name).join(', ');
+
+  if(!method || !material || !batch_no || !received_qty || !inspector) {
+    alert('Please fill all required fields.');
+    return;
+  }
+
+  let sample_size = 0, ac = '-', re = '-', result = '';
+
+  if(method === 'AQL') {
+    const entry = AQLTable.find(e => received_qty >= e.lotMin && received_qty <= e.lotMax);
+    if(!entry) {
+      alert('Received quantity out of AQL range.');
+      return;
+    }
+    const levelKey = getLevelKey(inspection_level);
+    sample_size = entry[levelKey];
+    ({ Ac: ac, Re: re } = getAQLLimits(sample_size, aql));
+    result = defects <= ac ? 'PASS' : 'FAIL';
+  } else if(method === '10%') {
+    sample_size = Math.ceil(received_qty * 0.10);
+    const maxDefects = Math.floor(received_qty * 0.03);
+    result = defects <= maxDefects ? 'PASS' : 'FAIL';
+    ac = `≤ ${maxDefects}`;
+    re = `> ${maxDefects}`;
+  }
+
+  const row = document.createElement('tr');
+  row.innerHTML = `
+    <td class='border px-2 py-1'>${method}</td>
+    <td class='border px-2 py-1'>${material}</td>
+    <td class='border px-2 py-1'>${batch_no}</td>
+    <td class='border px-2 py-1'>${received_qty}</td>
+    <td class='border px-2 py-1'>${method === 'AQL' ? inspection_level : '-'}</td>
+    <td class='border px-2 py-1'>${method === 'AQL' ? aql : '-'}</td>
+    <td class='border px-2 py-1'>${sample_size}</td>
+    <td class='border px-2 py-1'>${ac}</td>
+    <td class='border px-2 py-1'>${re}</td>
+    <td class='border px-2 py-1'>${defects}</td>
+    <td class='border px-2 py-1 font-semibold ${result === 'PASS' ? 'text-green-600' : 'text-red-600'}'>${result}</td>
+    <td class='border px-2 py-1'>${inspector}</td>
+    <td class='border px-2 py-1'>${lab_test}</td>
+    <td class='border px-2 py-1'>${test_type}</td>
+    <td class='border px-2 py-1'>${attachments || '-'}</td>
+    <td class='border px-2 py-1'>${remarks}</td>
+  `;
+  tableBody.appendChild(row);
+
+  document.getElementById('inspectionForm').reset();
+  fileListDiv.textContent = '';
+  testTypeInput.disabled = true;
+  aqlDisplayBox.classList.add('hidden');
+  tenPercentDisplayBox.classList.add('hidden');
+});
+
+// Save All Records (each row to backend)
+document.getElementById('saveAll').addEventListener('click', async () => {
+  const rows = Array.from(document.querySelectorAll('#recordBody tr'));
+  if (rows.length === 0) {
+    alert('No records to save.');
+    return;
+  }
+  for (const row of rows) {
+    const cells = row.querySelectorAll('td');
+    // Helpers to sanitize the cell values
+    function safeInt(val) {
+      val = val.trim();
+      return val === "" || val === "-" ? null : parseInt(val);
+    }
+    function safeFloat(val) {
+      val = val.trim();
+      return val === "" || val === "-" ? null : parseFloat(val);
+    }
+    function safeText(val) {
+      val = val.trim();
+      return val === "-" ? "" : val;
+    }
+    const record = {
+      method: safeText(cells[0].innerText),
+      material: safeText(cells[1].innerText),
+      batch_no: safeText(cells[2].innerText),
+      received_qty: safeInt(cells[3].innerText),
+      inspection_level: safeText(cells[4].innerText),
+      aql: safeFloat(cells[5].innerText),
+      sample_size: safeInt(cells[6].innerText),
+      ac: safeText(cells[7].innerText),
+      re: safeText(cells[8].innerText),
+      defects: safeInt(cells[9].innerText),
+      result: safeText(cells[10].innerText),
+      inspector: safeText(cells[11].innerText),
+      lab_test: safeText(cells[12].innerText),
+      test_type: safeText(cells[13].innerText),
+      attachments: safeText(cells[14].innerText),
+      remarks: safeText(cells[15].innerText)
+    };
+    await fetch('/save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(record)
+    });
+  }
+  alert('✅ All records saved to the database!');
+  document.getElementById('recordBody').innerHTML = '';
+});
+
+// Fetch saved records when the page loads
+window.addEventListener('DOMContentLoaded', async () => {
+  const response = await fetch('/records');
+  const records = await response.json();
+  tableBody.innerHTML = '';
+  if (records.length === 0) {
+    tableBody.innerHTML = `<tr><td colspan="16" class="text-center py-3 text-gray-500">⚠️ No records found in the inspections table.</td></tr>`;
+    return;
+  }
+  records.forEach(record => {
+    const row = document.createElement('tr');
+    row.innerHTML = `
+      <td class='border px-2 py-1'>${record[1]}</td>
+      <td class='border px-2 py-1'>${record[2]}</td>
+      <td class='border px-2 py-1'>${record[3]}</td>
+      <td class='border px-2 py-1'>${record[4]}</td>
+      <td class='border px-2 py-1'>${record[5]}</td>
+      <td class='border px-2 py-1'>${record[6]}</td>
+      <td class='border px-2 py-1'>${record[7]}</td>
+      <td class='border px-2 py-1'>${record[8]}</td>
+      <td class='border px-2 py-1'>${record[9]}</td>
+      <td class='border px-2 py-1'>${record[10]}</td>
+      <td class='border px-2 py-1'>${record[11]}</td>
+      <td class='border px-2 py-1'>${record[12]}</td>
+      <td class='border px-2 py-1'>${record[13]}</td>
+      <td class='border px-2 py-1'>${record[14]}</td>
+      <td class='border px-2 py-1'>${record[15]}</td>
+      <td class='border px-2 py-1'>${record[16]}</td>
+    `;
+    tableBody.appendChild(row);
+  });
+});
+
+document.getElementById('currentDate').textContent = new Date().toLocaleDateString();
+</script>
+
+</body>
+</html>
